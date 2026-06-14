@@ -13,13 +13,16 @@
     "windows": [
       {
         "title": "我的笔记待办与日历",
-        "width": 900,
-        "height": 720,
-        "minWidth": 520,
-        "minHeight": 600,
+        "width": 560,
+        "height": 520,
+        "minWidth": 420,
+        "minHeight": 460,
         "resizable": true,
         "fullscreen": false,
-        "center": true
+        "center": true,
+        "transparent": true,
+        "shadow": false,
+        "decorations": false
       }
     ],
     "security": {
@@ -38,7 +41,9 @@
       },
       "nsis": {
         "displayLanguageSelector": false,
-        "languages": ["SimpChinese"]
+        "languages": [
+          "SimpChinese"
+        ]
       }
     },
     "macOS": {

@@ -7,6 +7,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { loadAppData, saveAppData } from "./storage";
 import type { AppData, Note, Page, Task, TasksByDate } from "./types";
 
@@ -64,10 +66,36 @@ export default function App() {
   const [modal, setModal] = useState<ModalState>(EMPTY_MODAL);
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
+  const [floatingMode, setFloatingMode] = useState(false);
 
   const modalTextareaRef = useRef<HTMLTextAreaElement>(null);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const saveTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+
+    void listen("toggle-floating-mode", () => {
+      setFloatingMode((current) => {
+        const next = !current;
+
+        setEditTarget(null);
+        setModal(EMPTY_MODAL);
+        setPage("todo");
+        setSelectedTaskId(null);
+
+        void getCurrentWindow().setAlwaysOnTop(next);
+
+        return next;
+      });
+    }).then((dispose) => {
+      unlisten = dispose;
+    });
+
+    return () => {
+      unlisten?.();
+    };
+  }, []);
 
   useEffect(() => {
     void loadAppData().then((data) => {
@@ -286,7 +314,29 @@ export default function App() {
         return;
       }
 
-      if (modal.open || editTarget || isTyping || page === "note") return;
+      if (modal.open || editTarget || isTyping) return;
+
+      if (!floatingMode && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+        event.preventDefault();
+
+        const pageOrder: Page[] = ["note", "todo", "calendar"];
+        const currentIndex = pageOrder.indexOf(page);
+        const direction = event.key === "ArrowRight" ? 1 : -1;
+        const nextIndex =
+          (currentIndex + direction + pageOrder.length) % pageOrder.length;
+        const nextPage = pageOrder[nextIndex];
+
+        setPage(nextPage);
+        setSelectedTaskId(null);
+
+        if (nextPage === "calendar") {
+          setSelectedDate(todayStr);
+        }
+
+        return;
+      }
+
+      if (page === "note") return;
 
       if (event.key === "ArrowDown") {
         event.preventDefault();
@@ -310,6 +360,7 @@ export default function App() {
     closeModal,
     deleteSelectedTask,
     editTarget,
+    floatingMode,
     modal.open,
     moveSelection,
     openNewModal,
@@ -562,12 +613,26 @@ export default function App() {
     );
   }
 
+  function minimizeWindow() {
+    void getCurrentWindow().minimize();
+  }
+
+  function toggleMaximizeWindow() {
+    void getCurrentWindow().toggleMaximize();
+  }
+
+  function closeWindow() {
+    void getCurrentWindow().close();
+  }
+
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div>
-          <h1>{page === "todo" ? "待办" : page === "note" ? "笔记" : "日历"}</h1>
-          <div className={`save-state save-${saveState}`}>
+    <div className={floatingMode ? "app-shell floating-mode" : "app-shell"}>
+      <header className="topbar" data-tauri-drag-region>
+        <div className="title-area" data-tauri-drag-region>
+          <h1 data-tauri-drag-region>
+            {page === "todo" ? "待办" : page === "note" ? "笔记" : "日历"}
+          </h1>
+          <div className={`save-state save-${saveState}`} data-tauri-drag-region>
             {saveState === "saving"
               ? "正在保存…"
               : saveState === "error"
@@ -576,15 +641,45 @@ export default function App() {
           </div>
         </div>
 
-        <div className="desktop-shortcuts">
-          ↑↓ 选择　空格编辑　Delete 删除　Ctrl/⌘+N 新建
+        <div className="desktop-shortcuts" data-tauri-drag-region>
+          ←→ 切换　↑↓ 选择　空格编辑　Delete 删除
+        </div>
+
+        <div className="window-controls">
+          <button
+            type="button"
+            className="window-control"
+            onClick={minimizeWindow}
+            title="最小化"
+            aria-label="最小化"
+          >
+            —
+          </button>
+          <button
+            type="button"
+            className="window-control"
+            onClick={toggleMaximizeWindow}
+            title="最大化/还原"
+            aria-label="最大化或还原"
+          >
+            □
+          </button>
+          <button
+            type="button"
+            className="window-control window-close"
+            onClick={closeWindow}
+            title="关闭"
+            aria-label="关闭"
+          >
+            ×
+          </button>
         </div>
       </header>
 
       <main className="content-area">
         {page === "todo" && (
           <section className="section-stack">
-            <div className="section-heading">
+            <div className="section-heading normal-only">
               <h2>进行中（{todayStr}）</h2>
               <button className="secondary-button" onClick={copyToTomorrow}>
                 复制到明日
@@ -598,9 +693,9 @@ export default function App() {
               )}
             </div>
 
-            <h2 className="completed-heading">已完成</h2>
+            <h2 className="completed-heading normal-only">已完成</h2>
 
-            <div className="card-list">
+            <div className="card-list completed-list normal-only">
               {completedTasks.map((task) => renderTaskCard(task, todayStr))}
               {completedTasks.length === 0 && (
                 <div className="empty-state">暂无已完成待办</div>

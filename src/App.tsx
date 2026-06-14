@@ -1,6 +1,7 @@
 import {
   FormEvent,
   KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -613,6 +614,18 @@ export default function App() {
     );
   }
 
+  function startWindowDrag(event: ReactMouseEvent<HTMLElement>) {
+    if (event.button !== 0) return;
+
+    const target = event.target as HTMLElement;
+
+    if (target.closest("button, input, textarea, a")) {
+      return;
+    }
+
+    void getCurrentWindow().startDragging();
+  }
+
   function minimizeWindow() {
     void getCurrentWindow().minimize();
   }
@@ -627,7 +640,11 @@ export default function App() {
 
   return (
     <div className={floatingMode ? "app-shell floating-mode" : "app-shell"}>
-      <header className="topbar" data-tauri-drag-region>
+      <header
+        className="topbar"
+        data-tauri-drag-region
+        onMouseDown={startWindowDrag}
+      >
         <div className="title-area" data-tauri-drag-region>
           <h1 data-tauri-drag-region>
             {page === "todo" ? "待办" : page === "note" ? "笔记" : "日历"}

@@ -13,9 +13,9 @@
     "windows": [
       {
         "title": "我的笔记待办与日历",
-        "width": 560,
+        "width": 430,
         "height": 520,
-        "minWidth": 420,
+        "minWidth": 360,
         "minHeight": 460,
         "resizable": true,
         "fullscreen": false,
@@ -31,7 +31,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": "nsis",
     "category": "Productivity",
     "shortDescription": "本地笔记、待办与日历",
     "longDescription": "支持本地持久化、键盘操作、笔记、待办和日历管理的桌面应用。",

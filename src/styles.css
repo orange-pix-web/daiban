@@ -93,12 +93,12 @@ textarea {
 .content-area {
   flex: 1;
   overflow-y: auto;
-  padding: 10px 12px 104px;
+  padding: 10px 10px 104px;
 }
 
 .section-stack,
 .calendar-section {
-  width: min(760px, 100%);
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -600,4 +600,43 @@ html:has(.floating-mode),
 
 .floating-mode {
   border: 0 !important;
+}
+
+
+/* 窄窗口适配 */
+.topbar {
+  cursor: default;
+}
+
+.topbar[data-tauri-drag-region],
+.topbar [data-tauri-drag-region] {
+  -webkit-app-region: drag;
+}
+
+.window-controls,
+.window-controls *,
+.topbar button {
+  -webkit-app-region: no-drag;
+}
+
+@media (max-width: 480px) {
+  .desktop-shortcuts {
+    display: none;
+  }
+
+  .topbar {
+    padding-left: 10px;
+    padding-right: 8px;
+  }
+
+  .content-area {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .task-card,
+  .note-card {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
 }
